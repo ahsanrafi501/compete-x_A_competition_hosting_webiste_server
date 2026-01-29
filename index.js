@@ -1,11 +1,12 @@
 const express = require('express')
+require('dotenv').config()
 const app = express()
-const port = 3000
+const port = process.env.PORT || 5000
 var cors = require('cors')
 app.use(cors())
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.send('Hello World from compete-x server')
 })
 
 app.listen(port, () => {
