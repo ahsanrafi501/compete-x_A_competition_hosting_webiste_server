@@ -1,7 +1,7 @@
 const express = require('express')
 require('dotenv').config()
 const app = express()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 const cors = require('cors')
 
@@ -66,6 +66,18 @@ async function run() {
     app.get('/all-contests', async(req, res) =>{
       const result = await contestCollections.find().toArray();
       res.send(result);
+    })
+    app.get('/top-contests', async(req, res) =>{
+      const result = await contestCollections.find().sort({participantCount: -1}).limit(3).toArray();
+      res.send(result);
+    })
+
+
+    app.get('/contest/:id', async(req, res)=>{
+      const id = req.params.id;
+      const cursor = {_id: new ObjectId(id)};
+      const result = await contestCollections.findOne(cursor);
+      res.send(result)
     })
 
     app.post('/contest', async(req, res)=>{
