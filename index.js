@@ -30,10 +30,48 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     const db = client.db('competexDB');
     const userCollections = db.collection('user');
+    const contestCollections = db.collection('contest');
+
+
+
+
+    // Users Api
+
+    app.get('/users', async(req, res)=>{
+      const result = await userCollections.find().toArray();
+      res.send(result);
+    })
 
     app.post('/users', async(req, res)=>{
       const userInfo = req.body;
+      userInfo.createdAt = new Date();
+
+      const email = userInfo.email;
+      const uesrExisted = await userCollections.findOne({email})
+
+
+      if(uesrExisted){
+        return res.send({message: "User already existed"})
+      }
       const result = await userCollections.insertOne(userInfo);
+      res.send(result);
+    })
+
+
+
+
+    // Contest Related API
+
+
+    app.get('/all-contests', async(req, res) =>{
+      const result = await contestCollections.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/contest', async(req, res)=>{
+      const contestInfo = req.body;
+      contestInfo.createdAt = new Date();
+      const result = await contestCollections.insertOne(contestInfo)
       res.send(result);
     })
 
