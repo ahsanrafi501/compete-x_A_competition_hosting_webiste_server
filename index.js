@@ -64,11 +64,13 @@ async function run() {
 
 
     app.get('/all-contests', async (req, res) => {
-      const result = await contestCollections.find().toArray();
+      const query = {status: 'approved'}
+      const result = await contestCollections.find(query).toArray();
       res.send(result);
     })
     app.get('/top-contests', async (req, res) => {
-      const result = await contestCollections.find().sort({ participantCount: -1 }).limit(3).toArray();
+      const query = {status: 'approved'}
+      const result = await contestCollections.find(query).sort({ participantCount: -1 }).limit(3).toArray();
       res.send(result);
     })
 
@@ -82,7 +84,6 @@ async function run() {
 
     app.post('/contest', async (req, res) => {
       const contestInfo = req.body;
-      contestInfo.createdAt = new Date();
       const result = await contestCollections.insertOne(contestInfo)
       res.send(result);
     })
