@@ -37,21 +37,21 @@ async function run() {
 
     // Users Api
 
-    app.get('/users', async(req, res)=>{
+    app.get('/users', async (req, res) => {
       const result = await userCollections.find().toArray();
       res.send(result);
     })
 
-    app.post('/users', async(req, res)=>{
+    app.post('/users', async (req, res) => {
       const userInfo = req.body;
       userInfo.createdAt = new Date();
 
       const email = userInfo.email;
-      const uesrExisted = await userCollections.findOne({email})
+      const uesrExisted = await userCollections.findOne({ email })
 
 
-      if(uesrExisted){
-        return res.send({message: "User already existed"})
+      if (uesrExisted) {
+        return res.send({ message: "User already existed" })
       }
       const result = await userCollections.insertOne(userInfo);
       res.send(result);
@@ -63,24 +63,24 @@ async function run() {
     // Contest Related API
 
 
-    app.get('/all-contests', async(req, res) =>{
+    app.get('/all-contests', async (req, res) => {
       const result = await contestCollections.find().toArray();
       res.send(result);
     })
-    app.get('/top-contests', async(req, res) =>{
-      const result = await contestCollections.find().sort({participantCount: -1}).limit(3).toArray();
+    app.get('/top-contests', async (req, res) => {
+      const result = await contestCollections.find().sort({ participantCount: -1 }).limit(3).toArray();
       res.send(result);
     })
 
 
-    app.get('/contest/:id', async(req, res)=>{
+    app.get('/contest/:id', async (req, res) => {
       const id = req.params.id;
-      const cursor = {_id: new ObjectId(id)};
+      const cursor = { _id: new ObjectId(id) };
       const result = await contestCollections.findOne(cursor);
       res.send(result)
     })
 
-    app.post('/contest', async(req, res)=>{
+    app.post('/contest', async (req, res) => {
       const contestInfo = req.body;
       contestInfo.createdAt = new Date();
       const result = await contestCollections.insertOne(contestInfo)
@@ -88,6 +88,21 @@ async function run() {
     })
 
 
+    // Search Contest
+
+    app.get('/contests', async (req, res) => {
+      const searchText = req.query.search;
+      const query = {};
+      if (searchText) {
+        query.$or = [
+          {
+            name: { $regex: searchText, $options: 'i' }
+          }
+        ];
+      }
+      const result = await contestCollections.find(query).sort({ createdAt: -1 }).limit(3).toArray();
+      res.send(result);
+    })
 
 
 
