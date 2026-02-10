@@ -105,6 +105,12 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/contests/pending', async(req, res)=> {
+      const query = {status: 'pending'};
+      const result = await contestCollections.find(query).toArray();
+      res.send(result)
+    })
+
 
 
 
