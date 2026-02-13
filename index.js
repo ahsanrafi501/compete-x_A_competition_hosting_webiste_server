@@ -64,12 +64,12 @@ async function run() {
 
 
     app.get('/all-contests', async (req, res) => {
-      const query = {status: 'approved'}
+      const query = { status: 'approved' }
       const result = await contestCollections.find(query).toArray();
       res.send(result);
     })
     app.get('/top-contests', async (req, res) => {
-      const query = {status: 'approved'}
+      const query = { status: 'approved' }
       const result = await contestCollections.find(query).sort({ participantCount: -1 }).limit(3).toArray();
       res.send(result);
     })
@@ -105,10 +105,29 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/contests/pending', async(req, res)=> {
-      const query = {status: 'pending'};
+    app.get('/contests/pending', async (req, res) => {
+      const query = { status: 'pending' };
       const result = await contestCollections.find(query).toArray();
       res.send(result)
+    })
+
+    app.patch('/contest/approved/:id', async (req, res) => {
+      const { id } = req.params;
+      const updateDoc = {
+        $set: { status: 'approved' }
+      };
+      const query = { _id: new ObjectId(id) }
+      const result = await contestCollections.updateOne(query, updateDoc);
+      res.send(result);
+    })
+    app.patch('/contest/denied/:id', async (req, res) => {
+      const { id } = req.params;
+      const updateDoc = {
+        $set: { status: 'denied' }
+      };
+      const query = { _id: new ObjectId(id) }
+      const result = await contestCollections.updateOne(query, updateDoc);
+      res.send(result);
     })
 
 
