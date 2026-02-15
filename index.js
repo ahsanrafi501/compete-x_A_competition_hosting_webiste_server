@@ -31,6 +31,7 @@ async function run() {
     const db = client.db('competexDB');
     const userCollections = db.collection('user');
     const contestCollections = db.collection('contest');
+    const enrollCollections = db.collection('enroll');
 
 
 
@@ -105,6 +106,13 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/my-contests', async (req, res) => {
+      const email = req.query.email;
+      const query = { createdBy: email }
+      const result = await contestCollections.find(query).toArray();
+      res.send(result);
+    })
+
     app.get('/contests/pending', async (req, res) => {
       const query = { status: 'pending' };
       const result = await contestCollections.find(query).toArray();
@@ -129,6 +137,130 @@ async function run() {
       const result = await contestCollections.updateOne(query, updateDoc);
       res.send(result);
     })
+
+
+    app.post('/enroll-contest/:id', async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { participantEmail } = req.body;
+
+        const contest = await contestCollections.findOne({
+          _id: new ObjectId(id)
+        });
+
+        if (!contest) {
+          return res.status(404).send({ message: "Contest not found" });
+        }
+
+        if (contest.creatorEmail === participantEmail) {
+          return res.status(403).send({
+            message: "Creators cannot participate in their own contests."
+          });
+        }
+
+        const alreadyEnrolled = await enrollCollections.findOne({
+          contestId: id,
+          participantEmail
+        });
+
+        if (alreadyEnrolled) {
+          return res.status(400).send({
+            message: "You have already enrolled in this contest."
+          });
+        }
+
+        const enrollmentDoc = {
+          contestId: id,
+          participantEmail,
+          enrolledAt: new Date(),
+          status: "active"
+        };
+
+        const result = await enrollCollections.insertOne(enrollmentDoc);
+
+        await contestCollections.updateOne(
+          { _id: new ObjectId(id) },
+          { $inc: { participantCount: 1 } }
+        );
+
+        res.send({
+          success: true,
+          message: "Enrollment successful",
+          insertedId: result.insertedId
+        });
+
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
+    app.get('/isEnrolled', async (req, res) => {
+      const email = req.query.email;
+      const query = { participantEmail: email }
+      const result = await enrollCollections.find(query).toArray();
+      res.send(result)
+    })
+
+
+    // Get all contests a specific user is enrolled in, including full contest details
+    app.get('/my-enrolled-contests', async (req, res) => {
+      try {
+        const email = req.query.email;
+        if (!email) {
+          return res.status(400).send({ message: "Email is required" });
+        }
+
+        const result = await enrollCollections.aggregate([
+          {
+            // 1. Filter by participant email
+            $match: { participantEmail: email }
+          },
+          {
+            // 2. Convert contestId (string) to ObjectId to match with contest._id
+            $addFields: {
+              contestObjectId: { $toObjectId: "$contestId" }
+            }
+          },
+          {
+            // 3. Join with the contest collection
+            $lookup: {
+              from: "contest",           // The target collection name
+              localField: "contestObjectId",
+              foreignField: "_id",
+              as: "contestDetails"
+            }
+          },
+          {
+            // 4. Flatten the contestDetails array into an object
+            $unwind: "$contestDetails"
+          },
+          {
+            // 5. Cleanup: Remove the temporary ObjectId field
+            $project: {
+              contestObjectId: 0
+            }
+          }
+        ]).toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Aggregation Error:", error);
+        res.status(500).send({ message: "Internal Server Error" });
+      }
+    });
+
+
+    app.get('/submit-content/:courseId', async(req,res)=> {
+      const id = req.params.courseId;
+      const query = {_id: new ObjectId(id)};
+      const result = await contestCollections.find(query).toArray();
+      res.send(result)
+    })
+
+
+    
+
 
 
 
